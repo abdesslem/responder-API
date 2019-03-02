@@ -1,26 +1,30 @@
 import responder
 import time
+import json
 
-from book.model import books
+from book.model import books, book_post_schema
+from book.validators import validate
 
 api = responder.API()
 
 
-# If you want your API to send back JSON, 
-# simply set the resp.media property to a JSON-serializable Python object
-
 @api.route("/books")
 class Book():
-    def on_get(self, req, resp):
+    async def on_get(self, req, resp):
         resp.media = books
-    def on_post(self, req, resp):
-        new_book = req.content()
-        print(dir(new_book))
+
+    @validate(book_post_schema)
+    async def on_post(self, req, resp):
+        new_book = json.loads(await req.text)
         try:
             books.append(new_book)
-            resp.media = books
+            resp.media = new_book
         except:
             resp.media = {"message": "An Error occured"}
+
+
+# If you want your API to send back JSON, 
+# simply set the resp.media property to a JSON-serializable Python object
 
 
 @api.route("/books/{id}")
@@ -30,6 +34,7 @@ def get_book(req, resp, *, id):
     except:
         resp.status_code = api.status_codes.HTTP_404
         resp.media = {"message": "Not Found"}
+
 
 @api.route("/sendmail")
 async def sendmail(req, resp):
